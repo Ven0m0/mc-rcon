@@ -24,12 +24,10 @@ from mcrconpy.exceptions import (
     SocketConnectionError,
 )
 from mcrconpy.models import Command, User
-from mcrconpy.version import VERSION
 
 # Legacy alias for backward compatibility
 RconPy = Rcon
 
-__version__ = VERSION
 __all__ = [
     # Core classes
     "Rcon",
@@ -51,7 +49,4 @@ __all__ = [
     "PasswordError",
     # Legacy
     "RconPy",
-    # Version
-    "VERSION",
-    "__version__",
 ]
