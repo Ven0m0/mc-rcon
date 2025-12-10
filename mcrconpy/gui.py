@@ -104,12 +104,14 @@ class RconGUI:
             # Atomic rename (POSIX compliant)
             os.replace(temp_path, CONFIG_FILE)
         except OSError as e:
-            self.log_message(f"Failed to save config: {e}")
-            with open(CONFIG_FILE, "wb") as f:
-                if HAS_ORJSON:
-                    f.write(orjson.dumps(config, option=orjson.OPT_INDENT_2))
-                else:
-                    f.write(json.dumps(config, indent=2).encode("utf-8"))
+            self.log_message(f"Failed to save config atomically: {e}")
+            # Attempt to clean up the temporary file if it was created, but prioritize
+            # not corrupting the original config file.
+            if "temp_path" in locals():
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass  # Ignore errors during cleanup of temp file
 
     def log_message(self, message: str) -> None:
         """Append timestamped message to log file.
