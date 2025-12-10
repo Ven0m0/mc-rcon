@@ -1,97 +1,118 @@
-# -*- coding: utf-8 -*-
-"""
-Models for User and Command tracking.
-"""
+"""Models for User and Command tracking with dataclasses."""
 
-from typing import Optional, List, Any
-from mcrconpy.utils import (
-    get_timestamp,
-    from_timestamp,
-    difference_times,
-)
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from mcrconpy.utils import get_timestamp
 
 
+@dataclass(frozen=True)
 class Command:
-    """
-    Represents an executed command and its execution timestamp.
+    """Represents an executed command with timestamp.
+
+    Attributes:
+        command: The command string that was executed.
+        timestamp: UTC timestamp when command was executed.
     """
 
-    def __init__(self, command: str) -> None:
-        self.command: str = command
-        self.timestamp: float = get_timestamp()
+    command: str
+    timestamp: float = field(default_factory=get_timestamp)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, float | str]:
+        """Serialize to dictionary.
+
+        Returns:
+            dict: Command data with command text and timestamp.
+        """
         return {"command": self.command, "timestamp": self.timestamp}
 
     def __str__(self) -> str:
-        return f"{from_timestamp(self.timestamp)}, {self.command[:10]}"
+        """Human-readable string representation."""
+        cmd_preview = self.command[:10]
+        return f"[{self.timestamp}] {cmd_preview}"
 
-    def __repr__(self) -> str:
-        return f"<[ CMD: {self.__str__()} ]>"
 
-
+@dataclass
 class User:
-    """
-    Represents the RCON user session.
+    """RCON user session with command history and timing.
+
+    Attributes:
+        id: User identifier (always 1 for RCON).
+        commands: List of executed commands.
+        is_login: Whether user is currently authenticated.
+        start_session: Session start timestamp (UTC).
+        end_session: Session end timestamp (UTC).
+        seconds_session: Total session duration in seconds.
     """
 
-    def __init__(self, password: Optional[str] = None) -> None:
-        self.id: int = 1
-        self._password: Optional[str] = password
-        self.commands: List[Command] = []
-        self.is_login: bool = False
-        self.start_session: Optional[float] = None
-        self.end_session: Optional[float] = None
-        self.seconds_session: Optional[float] = None
+    id: int = 1
+    commands: list[Command] = field(default_factory=list)
+    is_login: bool = False
+    start_session: float | None = None
+    end_session: float | None = None
+    seconds_session: float | None = None
+    _password: str | None = field(default=None, repr=False)
 
     def active_session(self) -> None:
-        """Starts the session timer."""
+        """Start the session timer and mark user as logged in."""
         self.is_login = True
         self.start_session = get_timestamp()
 
     def close_session(self) -> None:
-        """Ends the session timer."""
+        """End the session timer and calculate duration."""
         self.is_login = False
         self.end_session = get_timestamp()
         self.calculate_duration()
 
     def calculate_duration(self) -> None:
-        """Calculates session duration."""
+        """Calculate session duration from start/end timestamps."""
         if self.start_session is not None and self.end_session is not None:
-            delta = difference_times(self.start_session, self.end_session)
-            if delta:
-                self.seconds_session = delta.total_seconds()
-            else:
-                self.seconds_session = None
+            self.seconds_session = self.end_session - self.start_session
         else:
             self.seconds_session = None
 
     def set_password(self, passwd: str) -> bool:
-        """
-        Sets a new password.
+        """Update password if different from current.
+
+        Args:
+            passwd: New password to set.
+
+        Returns:
+            bool: True if password was changed, False otherwise.
         """
         if passwd and passwd != self._password:
             self._password = passwd
             return True
         return False
 
-    def get_password(self) -> Optional[str]:
-        """Returns the current password."""
+    def get_password(self) -> str | None:
+        """Get current password.
+
+        Returns:
+            str | None: Current password or None if not set.
+        """
         return self._password
 
     def register_command(self, cmd: str) -> None:
-        """Records a command."""
+        """Record a command execution.
+
+        Args:
+            cmd: Command string to record.
+        """
         self.commands.append(Command(command=cmd))
 
     def to_dict(self) -> dict[str, Any]:
-        """Serializes user session data."""
-        start = self.start_session
-        if start is not None:
-            # Converting to microseconds for legacy reason?
-            # Original code: int(self.start_session * 1000000)
-            start_us = int(start * 1_000_000)
-        else:
-            start_us = None  # type: ignore
+        """Serialize user session data.
+
+        Returns:
+            dict: Session data including commands, timestamps, and status.
+        """
+        start_us: int | None = None
+        if self.start_session is not None:
+            # Convert to microseconds for backwards compatibility
+            start_us = int(self.start_session * 1_000_000)
 
         return {
             "start_session": start_us,
@@ -102,8 +123,9 @@ class User:
         }
 
     def __str__(self) -> str:
-        start_ts = from_timestamp(self.start_session) if self.start_session else "N/A"
-        return f"User: is_login: {self.is_login}, Session: {start_ts}"
+        """Human-readable string representation."""
+        start_str = f"{self.start_session:.2f}" if self.start_session else "N/A"
+        return f"User: is_login={self.is_login}, Session={start_str}"
 
-    def __repr__(self) -> str:
-        return f"<[ {self.__str__()} ]>"
+
+__all__ = ["Command", "User"]
