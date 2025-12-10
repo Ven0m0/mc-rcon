@@ -1,4 +1,7 @@
-# -*- coding: utf-8 -*-
-""" """
+"""Version information for mcrconpy."""
 
-VERSION = "0.1.1"
+from __future__ import annotations
+
+VERSION: str = "0.1.1"
+
+__all__ = ["VERSION"]

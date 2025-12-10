@@ -1,45 +1,59 @@
-# -*- coding: utf-8 -*-
-"""
-Utility functions for timestamp and datetime management.
-"""
+"""Utility functions for timestamp and datetime management."""
+
+from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
 
 def get_timestamp() -> float:
-    """
-    Returns the current UTC timestamp.
+    """Return the current UTC timestamp.
+
+    Returns:
+        float: Current UTC timestamp in seconds since epoch.
     """
     return datetime.now(timezone.utc).timestamp()
 
 
-def from_timestamp(timestamp: float) -> datetime | None:
-    """
-    Gets datetime object from timestamp.
+def from_timestamp(timestamp: float) -> datetime:
+    """Convert Unix timestamp to datetime object.
 
     Args:
-        timestamp: float, timestamp.
+        timestamp: Unix timestamp in seconds since epoch.
 
     Returns:
-        datetime: datetime instance from timestamp or None.
+        datetime: UTC datetime instance from timestamp.
+
+    Raises:
+        ValueError: If timestamp is invalid or out of range.
     """
-    if isinstance(timestamp, float):
+    try:
         return datetime.fromtimestamp(timestamp, timezone.utc)
-    return None
+    except (OSError, OverflowError, ValueError) as e:
+        raise ValueError(f"Invalid timestamp: {timestamp}") from e
 
 
-def difference_times(start: float, end: float) -> timedelta | None:
-    """
-    Gets the difference between two timestamps.
+def difference_times(start: float, end: float) -> timedelta:
+    """Calculate the difference between two timestamps.
 
     Args:
-        start: float, start timestamp.
-        end: float, end timestamp.
+        start: Start timestamp in seconds since epoch.
+        end: End timestamp in seconds since epoch.
 
     Returns:
-        timedelta: Difference between `end` and `start`.
+        timedelta: Difference between end and start timestamps.
+
+    Raises:
+        ValueError: If timestamps are invalid or end < start.
     """
-    if isinstance(start, float) and isinstance(end, float):
-        # Timestamps are absolute, direct subtraction is safe
-        return datetime.fromtimestamp(end, timezone.utc) - datetime.fromtimestamp(start, timezone.utc)
-    return None
+    if end < start:
+        raise ValueError(f"End timestamp ({end}) must be >= start timestamp ({start})")
+
+    try:
+        start_dt = datetime.fromtimestamp(start, timezone.utc)
+        end_dt = datetime.fromtimestamp(end, timezone.utc)
+        return end_dt - start_dt
+    except (OSError, OverflowError, ValueError) as e:
+        raise ValueError(f"Invalid timestamps: start={start}, end={end}") from e
+
+
+__all__ = ["get_timestamp", "from_timestamp", "difference_times"]

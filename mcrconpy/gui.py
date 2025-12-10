@@ -1,11 +1,12 @@
-import tkinter as tk
-from tkinter import scrolledtext, messagebox
-from mcrconpy.core import Rcon as RconPy
+import datetime
 import json
 import os
-import datetime
 import re
+import tkinter as tk
 from threading import Thread
+from tkinter import messagebox, scrolledtext
+
+from mcrconpy.core import Rcon as RconPy
 
 CONFIG_FILE = "rcon_config.json"
 LOG_FILE = "rcon_log.txt"
@@ -26,7 +27,7 @@ class RconGUI:
     def load_config(self):
         if os.path.exists(CONFIG_FILE):
             try:
-                with open(CONFIG_FILE, "r") as f:
+                with open(CONFIG_FILE) as f:
                     return json.load(f)
             except:
                 return {}
@@ -52,7 +53,9 @@ class RconGUI:
 
         password = self.password_entry.get().strip()
         if not address or not password:
-            messagebox.showwarning("Input Error", "Please enter the address and password.")
+            messagebox.showwarning(
+                "Input Error", "Please enter the address and password."
+            )
             return
 
         try:
@@ -95,8 +98,13 @@ class RconGUI:
                 self.root.after(0, lambda: self.update_output(command, response))
                 if command.lower().startswith("list"):
                     self.root.after(0, lambda: self.update_player_list(response))
-            except Exception as e:
-                self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to send command:\n{e}"))
+            except Exception:
+                self.root.after(
+                    0,
+                    lambda: messagebox.showerror(
+                        "Error", f"Failed to send command:\n{e}"
+                    ),
+                )
                 self.root.after(0, lambda: self.log_message(f"Command error: {e}"))
 
         Thread(target=run_cmd, daemon=True).start()
@@ -127,7 +135,9 @@ class RconGUI:
                 if len(parts) > 1:
                     player_segment = parts[1].strip()
                     if player_segment:
-                        players = [p.strip() for p in player_segment.split(",") if p.strip()]
+                        players = [
+                            p.strip() for p in player_segment.split(",") if p.strip()
+                        ]
                         if players:
                             for player in players:
                                 self.player_list_box.insert(tk.END, player)
@@ -191,14 +201,26 @@ class RconGUI:
             if isinstance(widget, tk.Label):
                 widget.config(bg=self.root["bg"], fg=colors["label_fg"])
             elif isinstance(widget, tk.Entry):
-                widget.config(bg=colors["entry_bg"], fg=colors["entry_fg"], insertbackground=colors["entry_fg"])
+                widget.config(
+                    bg=colors["entry_bg"],
+                    fg=colors["entry_fg"],
+                    insertbackground=colors["entry_fg"],
+                )
             elif isinstance(widget, tk.Button):
                 widget.config(bg=colors["btn_bg"], fg=colors["btn_fg"])
             elif isinstance(widget, tk.Checkbutton):
-                widget.config(bg=self.root["bg"], fg=colors["label_fg"], selectcolor=self.root["bg"])
+                widget.config(
+                    bg=self.root["bg"],
+                    fg=colors["label_fg"],
+                    selectcolor=self.root["bg"],
+                )
 
         self.command_entry.config(insertbackground=colors["entry_fg"])
-        self.output_box.config(bg=colors["entry_bg"], fg=colors["entry_fg"], insertbackground=colors["entry_fg"])
+        self.output_box.config(
+            bg=colors["entry_bg"],
+            fg=colors["entry_fg"],
+            insertbackground=colors["entry_fg"],
+        )
         self.player_list_box.config(bg=colors["entry_bg"], fg=colors["entry_fg"])
         self.datapack_list_box.config(bg=colors["entry_bg"], fg=colors["entry_fg"])
         self.player_frame.config(bg=self.root["bg"])
@@ -223,18 +245,29 @@ class RconGUI:
 
         self.show_password_var = tk.BooleanVar()
         self.show_password_check = tk.Checkbutton(
-            self.root, text="Show Password", variable=self.show_password_var, command=self.toggle_password
+            self.root,
+            text="Show Password",
+            variable=self.show_password_var,
+            command=self.toggle_password,
         )
 
-        self.connect_button = tk.Button(self.root, text="Connect", command=self.connect_to_server)
-        self.dark_toggle_button = tk.Button(self.root, text="Toggle Dark Mode", command=self.toggle_dark_mode)
+        self.connect_button = tk.Button(
+            self.root, text="Connect", command=self.connect_to_server
+        )
+        self.dark_toggle_button = tk.Button(
+            self.root, text="Toggle Dark Mode", command=self.toggle_dark_mode
+        )
 
         self.command_label = tk.Label(self.root, text="Command:")
         self.command_entry = tk.Entry(self.root, width=30, state=tk.DISABLED)
         self.command_entry.bind("<Return>", self.send_command)
 
-        self.send_button = tk.Button(self.root, text="Send", command=self.send_command, state=tk.DISABLED)
-        self.output_box = scrolledtext.ScrolledText(self.root, width=60, height=15, state=tk.DISABLED)
+        self.send_button = tk.Button(
+            self.root, text="Send", command=self.send_command, state=tk.DISABLED
+        )
+        self.output_box = scrolledtext.ScrolledText(
+            self.root, width=60, height=15, state=tk.DISABLED
+        )
 
         self.player_frame = tk.Frame(self.root)
         self.player_label = tk.Label(self.player_frame, text="Online Players")
