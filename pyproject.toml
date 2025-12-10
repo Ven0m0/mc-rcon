@@ -22,7 +22,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.dependencies]
 orjson = "^3.9.10"
 python = "^3.10"
-uvloop = { version = "^0.19.0", markers = "sys_platform != 'win32'" }
+uvloop = { version = "^0.22.1", markers = "sys_platform != 'win32'" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
