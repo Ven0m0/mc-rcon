@@ -224,7 +224,8 @@ class Rcon:
 
             _, rid, type_, body = Packet.decode(length_bytes + payload)
             return body
-        except Exception:
+        except (OSError, TimeoutError, SocketConnectionError):
+            # Network errors, connection failures, or timeout
             return None
 
     def _recv_exact(self, n: int) -> bytes:
@@ -314,7 +315,16 @@ class AsyncRcon:
         self._ready = False
 
     async def __aenter__(self) -> AsyncRcon:
-        """Async context manager entry: connect and login."""
+        """Async context manager entry: connect and login.
+
+        Automatically installs uvloop for 2-4x async I/O performance boost.
+        """
+        # Try to install uvloop for performance (Unix only)
+        with suppress(ImportError):
+            import uvloop  # type: ignore[import-not-found]
+
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
         await self.connect()
         return self
 
