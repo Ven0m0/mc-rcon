@@ -1,4 +1,0 @@
-shell=bash
-enable=all
-disable=SC1090,SC1091
-source-path=SCRIPTDIR
