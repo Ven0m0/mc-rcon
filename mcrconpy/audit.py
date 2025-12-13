@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from mcrconpy.pathclass import PathClass
 
@@ -52,22 +52,22 @@ class Audit:
             raise OSError(f"Failed to write audit log: {e}") from e
 
     @staticmethod
-    def to_load() -> list[dict[str, Any]]:
-        """Load all audit records from the log file.
+    def to_load_iter() -> Iterator[dict[str, Any]]:
+        """Stream audit records one at a time (memory-efficient).
 
-        Returns:
-            list[dict]: List of audit records. Returns empty list if file
-                doesn't exist or contains invalid JSON.
+        Yields:
+            dict: Individual audit record.
 
         Note:
             Gracefully handles corrupted lines by skipping them.
+            This is the preferred method for large audit logs.
         """
-        if not Audit.FILE_PATH.exists():
-            return []
+        file_path = Path(Audit.FILE_PATH)
+        if not file_path.exists():
+            return
 
-        results: list[dict[str, Any]] = []
         try:
-            with Path(Audit.FILE_PATH).open("rb") as f:
+            with file_path.open("rb") as f:
                 for line_bytes in f:
                     line_bytes = line_bytes.strip()
                     if not line_bytes:
@@ -80,15 +80,30 @@ class Audit:
                             record = json.loads(line_bytes.decode("utf-8"))
 
                         if isinstance(record, dict):
-                            results.append(record)
+                            yield record
                     except (ValueError, UnicodeDecodeError):
                         # Skip corrupted lines
                         continue
         except OSError:
-            # Return partial results if file read fails midway
-            pass
+            # Stop iteration on file read errors
+            return
 
-        return results
+    @staticmethod
+    def to_load() -> list[dict[str, Any]]:
+        """Load all audit records from the log file.
+
+        Returns:
+            list[dict]: List of audit records. Returns empty list if file
+                doesn't exist or contains invalid JSON.
+
+        Warning:
+            For large audit logs, prefer to_load_iter() to avoid loading
+            all records into memory at once.
+
+        Note:
+            Gracefully handles corrupted lines by skipping them.
+        """
+        return list(Audit.to_load_iter())
 
 
 __all__ = ["Audit"]

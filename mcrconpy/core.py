@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import enum
-import random
 import socket
 import struct
 from contextlib import suppress
@@ -140,6 +139,16 @@ class Rcon:
         self.password = password
         self.socket: socket.socket | None = None
         self._logged_in = False
+        self._req_id = 0
+
+    def _next_req_id(self) -> int:
+        """Generate next request ID using incremental counter.
+
+        Returns:
+            int: Next request ID (wraps around at 2147483647).
+        """
+        self._req_id = (self._req_id + 1) % 2147483647
+        return self._req_id
 
     def connect(self) -> None:
         """Establish TCP connection to server.
@@ -171,7 +180,7 @@ class Rcon:
             raise SocketConnectionError("Not connected.")
 
         packet = Packet.build(
-            req_id=random.randint(0, 2147483647),
+            req_id=self._next_req_id(),
             packet_type=Packet.SERVERDATA_AUTH,
             data=self.password,
         )
@@ -208,7 +217,7 @@ class Rcon:
         if not self._logged_in or self.socket is None:
             return None
 
-        req_id = random.randint(0, 2147483647)
+        req_id = self._next_req_id()
         packet = Packet.build(req_id, Packet.SERVERDATA_EXECCOMMAND, cmd)
 
         try:
@@ -240,13 +249,15 @@ class Rcon:
         if self.socket is None:
             return b""
 
-        data = b""
-        while len(data) < n:
-            chunk = self.socket.recv(n - len(data))
+        chunks: list[bytes] = []
+        received = 0
+        while received < n:
+            chunk = self.socket.recv(n - received)
             if not chunk:
                 break
-            data += chunk
-        return data
+            chunks.append(chunk)
+            received += len(chunk)
+        return b"".join(chunks)
 
     def is_login(self) -> bool:
         """Check if client is authenticated.
@@ -313,6 +324,16 @@ class AsyncRcon:
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
         self._ready = False
+        self._req_id = 0
+
+    def _next_req_id(self) -> int:
+        """Generate next request ID using incremental counter.
+
+        Returns:
+            int: Next request ID (wraps around at 2147483647).
+        """
+        self._req_id = (self._req_id + 1) % 2147483647
+        return self._req_id
 
     async def __aenter__(self) -> AsyncRcon:
         """Async context manager entry: connect and login.
@@ -424,7 +445,7 @@ class AsyncRcon:
         if not self._writer:
             raise SocketConnectionError("Not connected")
 
-        req_id = random.randint(0, 2147483647)
+        req_id = self._next_req_id()
         packet = Packet.build(req_id, int(msg_type), msg)
 
         self._writer.write(packet)
