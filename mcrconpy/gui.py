@@ -54,6 +54,13 @@ class RconGUI:
         self.show_password_var: tk.BooleanVar
         self.player_frame: tk.Frame
 
+        # Cache for theme-able widgets (populated in setup_ui)
+        self._themeable_widgets: list[tuple[tk.Widget, str]] = []
+
+        # Auto-refresh failure tracking for backoff
+        self._refresh_failures = 0
+        self._refresh_interval = 5000  # milliseconds
+
         self.setup_ui()
         self.apply_theme()
 
@@ -299,21 +306,34 @@ class RconGUI:
 
         # Apply to root
         self.root.configure(bg=colors["root_bg"])
-
-        # Apply to standard widgets
-        for widget in self.root.winfo_children():
-            self._apply_widget_theme(widget, colors)
-
-        # Apply to custom widgets
-        self.command_entry.config(insertbackground=colors["entry_fg"])
-        self.output_box.config(
-            bg=colors["entry_bg"],
-            fg=colors["entry_fg"],
-            insertbackground=colors["entry_fg"],
-        )
-        self.player_list_box.config(bg=colors["entry_bg"], fg=colors["entry_fg"])
-        self.datapack_list_box.config(bg=colors["entry_bg"], fg=colors["entry_fg"])
         self.player_frame.config(bg=colors["root_bg"])
+
+        # Apply to cached widgets (much faster than tree traversal)
+        for widget, widget_type in self._themeable_widgets:
+            if widget_type == "label":
+                widget.config(bg=colors["root_bg"], fg=colors["label_fg"])
+            elif widget_type == "entry":
+                widget.config(
+                    bg=colors["entry_bg"],
+                    fg=colors["entry_fg"],
+                    insertbackground=colors["entry_fg"],
+                )
+            elif widget_type == "button":
+                widget.config(bg=colors["btn_bg"], fg=colors["btn_fg"])
+            elif widget_type == "checkbutton":
+                widget.config(
+                    bg=colors["root_bg"],
+                    fg=colors["label_fg"],
+                    selectcolor=colors["root_bg"],
+                )
+            elif widget_type == "scrolledtext":
+                widget.config(
+                    bg=colors["entry_bg"],
+                    fg=colors["entry_fg"],
+                    insertbackground=colors["entry_fg"],
+                )
+            elif widget_type == "listbox":
+                widget.config(bg=colors["entry_bg"], fg=colors["entry_fg"])
 
     def _get_theme_colors(self) -> dict[str, str]:
         """Get color palette for current theme.
@@ -340,35 +360,31 @@ class RconGUI:
                 "btn_fg": "#000000",
             }
 
-    def _apply_widget_theme(self, widget: tk.Widget, colors: dict[str, str]) -> None:
-        """Apply theme colors to a single widget.
-
-        Args:
-            widget: Tkinter widget to theme.
-            colors: Color palette dictionary.
-        """
-        if isinstance(widget, tk.Label):
-            widget.config(bg=colors["root_bg"], fg=colors["label_fg"])
-        elif isinstance(widget, tk.Entry):
-            widget.config(
-                bg=colors["entry_bg"],
-                fg=colors["entry_fg"],
-                insertbackground=colors["entry_fg"],
-            )
-        elif isinstance(widget, tk.Button):
-            widget.config(bg=colors["btn_bg"], fg=colors["btn_fg"])
-        elif isinstance(widget, tk.Checkbutton):
-            widget.config(
-                bg=colors["root_bg"],
-                fg=colors["label_fg"],
-                selectcolor=colors["root_bg"],
-            )
-
     def auto_refresh(self) -> None:
-        """Periodically refresh player list every 5 seconds."""
-        if self.rcon_client:
-            self.fetch_player_list()
-        self.root.after(5000, self.auto_refresh)
+        """Periodically refresh player list with rate limiting.
+
+        Only refreshes when:
+        - Client is connected
+        - Window is visible (not minimized/hidden)
+
+        Implements exponential backoff on consecutive failures.
+        """
+        # Only refresh if connected and window is visible
+        if self.rcon_client and self.root.winfo_viewable():
+            try:
+                self.fetch_player_list()
+                # Success - reset failure counter and interval
+                self._refresh_failures = 0
+                self._refresh_interval = 5000
+            except Exception:
+                # Failure - implement exponential backoff
+                self._refresh_failures += 1
+                # Cap at 60 seconds max interval
+                self._refresh_interval = min(
+                    5000 * (2 ** self._refresh_failures), 60000
+                )
+
+        self.root.after(self._refresh_interval, self.auto_refresh)
 
     def setup_ui(self) -> None:
         """Initialize all UI components and layout."""
@@ -377,6 +393,29 @@ class RconGUI:
         self._create_output_widgets()
         self._create_sidebar_widgets()
         self._layout_widgets()
+        self._cache_themeable_widgets()
+
+    def _cache_themeable_widgets(self) -> None:
+        """Cache all widgets that need theme updates for faster theme switching."""
+        self._themeable_widgets = [
+            (self.address_label, "label"),
+            (self.address_entry, "entry"),
+            (self.port_label, "label"),
+            (self.port_entry, "entry"),
+            (self.password_label, "label"),
+            (self.password_entry, "entry"),
+            (self.show_password_check, "checkbutton"),
+            (self.connect_button, "button"),
+            (self.dark_toggle_button, "button"),
+            (self.command_label, "label"),
+            (self.command_entry, "entry"),
+            (self.send_button, "button"),
+            (self.output_box, "scrolledtext"),
+            (self.player_label, "label"),
+            (self.player_list_box, "listbox"),
+            (self.datapack_label, "label"),
+            (self.datapack_list_box, "listbox"),
+        ]
 
     def _create_connection_widgets(self) -> None:
         """Create connection input widgets (address, port, password)."""
