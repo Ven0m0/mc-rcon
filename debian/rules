@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=mc-rcon
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_test:
+	# Upstream uses pytest-asyncio; Debian builds often skip network-ish tests.
+	# Run basic tests if present.
+	python3 -m pytest -q
