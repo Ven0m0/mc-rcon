@@ -1,0 +1,5 @@
+usr/bin/mcrcon
+usr/bin/mcrcon-gui
+usr/lib/python3*/dist-packages/mcrconpy*
+usr/lib/python3*/dist-packages/mc_rcon*
+usr/lib/python3*/dist-packages/*mc-rcon*
