@@ -13,22 +13,15 @@ This document contains critical information about working with this codebase. Fo
 
 2. Code Quality
    - Type hints required for all code
-   - use pyrefly for type checking
-     - run `pyrefly init` to start
-     - run `pyrefly check` after every change and fix resultings errors
+   - use mypy for type checking
+     - run `uv run mypy --strict mcrconpy/` to check types
+     - fix all type errors before committing
    - Public APIs must have docstrings
    - Functions must be focused and small
    - Follow existing patterns exactly
    - Line length: 88 chars maximum
 
-3. Testing Requirements
-   - Framework: `uv run pytest`
-   - Async testing: use anyio, not asyncio
-   - Coverage: test edge cases and errors
-   - New features require tests
-   - Bug fixes require regression tests
-
-4. Code Style
+3. Code Style
     - PEP 8 naming (snake_case for functions/variables)
     - Class names in PascalCase
     - Constants in UPPER_SNAKE_CASE
@@ -121,8 +114,8 @@ This document contains critical information about working with this codebase. Fo
      - Imports: split into multiple lines
 
 2. Type Checking
-  - run `pyrefly init` to start
-  - run `pyrefly check` after every change and fix resultings errors
+   - run `uv run mypy --strict mcrconpy/` to check types
+   - fix all type errors before committing
    - Requirements:
      - Explicit None checks for Optional
      - Type narrowing for strings
