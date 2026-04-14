@@ -21,7 +21,7 @@ Issues = "https://github.com/Ven0m0/mc-rcon/issues"
 [project.optional-dependencies]
 # Performance optimizations (recommended for production use)
 perf = [
-  "orjson>=3.11.5,<4.0.0",
+  "orjson>=3.11.8,<4.0.0",
   "uvloop>=0.22.1,<0.23.0; sys_platform != 'win32'",
 ]
 # Development dependencies
