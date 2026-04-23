@@ -111,7 +111,7 @@ perf = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.19.1" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.20.2" },
     { name = "orjson", marker = "extra == 'perf'", specifier = ">=3.11.8,<4.0.0" },
     { name = "platformdirs", specifier = ">=4.9.6,<5.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.11" },
