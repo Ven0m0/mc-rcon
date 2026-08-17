@@ -12,7 +12,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
 ]
-dependencies = ["platformdirs>=4.10.1,<5.0.0"]
+dependencies = ["platformdirs>=4.11.3,<5.0.0"]
 
 [project.urls]
 Repository = "https://github.com/Ven0m0/mc-rcon"
@@ -21,12 +21,12 @@ Issues = "https://github.com/Ven0m0/mc-rcon/issues"
 [project.optional-dependencies]
 # Performance optimizations (recommended for production use)
 perf = [
-  "orjson>=3.11.9,<4.0.0",
+  "orjson>=3.12.0,<4.0.0",
   "uvloop>=0.22.1,<0.23.0; sys_platform != 'win32'",
 ]
 # Development dependencies
 dev = [
-  "ruff>=0.15.22",
+  "ruff>=0.16.3",
   "mypy>=2.3.0",
 ]
 
